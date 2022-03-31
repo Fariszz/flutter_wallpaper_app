@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_wallpaper_app/widgets/widgets.dart';
 
-class HomeState extends StatefulWidget {
-  const HomeState({ Key? key }) : super(key: key);
+class Home extends StatefulWidget {
+  const Home({ Key? key }) : super(key: key);
 
   @override
-  State<HomeState> createState() => _HomeStateState();
+  State<Home> createState() => _HomeState();
 }
 
-class _HomeStateState extends State<HomeState> {
+class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      
+    return Scaffold(
+      appBar: AppBar(
+        title: brandName(),
+        centerTitle: true,
+      ),
     );
   }
 }
