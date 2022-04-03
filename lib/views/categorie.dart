@@ -1,96 +1,63 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-class CategoriesTile extends StatelessWidget {
-  final String imgUrls, categorie;
+import '../model/wallpaper_model.dart';
+import '../widgets/widgets.dart';
+import 'package:flutter_wallpaper_app/data/data.dart';
 
-  CategoriesTile({@required this.imgUrls, @required this.categorie});
-
+class Categorie extends StatefulWidget {
+  final String categorieName;
+  Categorie({required this.categorieName});
   @override
+  State<Categorie> createState() => _CategorieState();
+}
+
+class _CategorieState extends State<Categorie> {
+  List<WallpaperModel> wallpapers = [];
+
+  getSearchWallpapers(String query) async{
+    var response = await http.get(Uri.parse("https://api.pexels.com/v1/search?query=$query&per_page=15&page=1"), 
+    headers: {"Authorization": apiKey});
+
+    // print(response.body.toString());
+
+    Map<String,dynamic> jsonData = jsonDecode(response.body);
+    jsonData["photos"].forEach((element){
+      // print(element);
+      WallpaperModel wallpaperModel = new WallpaperModel();
+      wallpaperModel = WallpaperModel.fromMap(element);
+      wallpapers.add(wallpaperModel);
+    });
+
+    setState(() {
+      
+    });
+  }
+  
+  @override
+  void initState() {
+    getSearchWallpapers(widget.categorieName);
+    super.initState();
+  }
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => CategorieScreen(
-                      categorie: categorie,
-                    )));
-      },
-      child: Container(
-        margin: EdgeInsets.only(right: 8),
-        child: kIsWeb
-            ? Column(
-                children: <Widget>[
-                  ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: kIsWeb
-                          ? Image.network(
-                              imgUrls,
-                              height: 50,
-                              width: 100,
-                              fit: BoxFit.cover,
-                            )
-                          : CachedNetworkImage(
-                              imageUrl: imgUrls,
-                              height: 50,
-                              width: 100,
-                              fit: BoxFit.cover,
-                            )),
-                  SizedBox(
-                    height: 4,
-                  ),
-                  Container(
-                      width: 100,
-                      alignment: Alignment.center,
-                      child: Text(
-                        categorie,
-                        style: TextStyle(
-                            color: Colors.black54,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w400,
-                            fontFamily: 'Overpass'),
-                      )),
-                ],
-              )
-            : Stack(
-                children: <Widget>[
-                  ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: kIsWeb
-                          ? Image.network(
-                              imgUrls,
-                              height: 50,
-                              width: 100,
-                              fit: BoxFit.cover,
-                            )
-                          : CachedNetworkImage(
-                              imageUrl: imgUrls,
-                              height: 50,
-                              width: 100,
-                              fit: BoxFit.cover,
-                            )),
-                  Container(
-                    height: 50,
-                    width: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.black26,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  Container(
-                      height: 50,
-                      width: 100,
-                      alignment: Alignment.center,
-                      child: Text(
-                        categorie ?? "Yo Yo",
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: 'Overpass'),
-                      ))
-                ],
-              ),
-      ),
+    return Scaffold(
+      appBar: AppBar(
+        title: brandName(),
+          elevation: 0.0,
+        ),
+      body: SingleChildScrollView(
+        child: Container(
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 16,
+                ),
+                WallpapersList(wallpapers: wallpapers, context: context),
+              ],
+            )
+        ),
+      )
     );
   }
 }
