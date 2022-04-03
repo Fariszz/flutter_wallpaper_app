@@ -1,103 +1,160 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_wallpaper_app/views/categorie.dart';
+import 'package:flutter_wallpaper_app/views/search.dart';
 import 'package:flutter_wallpaper_app/widgets/widgets.dart';
+import 'package:http/http.dart' as http;
 
 import '../data/data.dart';
 import '../model/categories_model.dart';
+import '../model/wallpaper_model.dart';
 
 class Home extends StatefulWidget {
-  const Home({Key? key}) : super(key: key);
+  const Home({ Key? key }) : super(key: key);
 
   @override
   State<Home> createState() => _HomeState();
 }
 
-TextEditingController searchController = new TextEditingController();
-ScrollController _scrollController = new ScrollController();
-
 class _HomeState extends State<Home> {
   List<CategorieModel> categories = [];
+  List<WallpaperModel> wallpapers = [];
+  TextEditingController searchController = TextEditingController();
 
-  getTrendingWallpaper() async {
-    await http.get(
-        "https://api.pexels.com/v1/curated?per_page=$noOfImageToLoad&page=1",
-        headers: {"Authorization": apiKEY}).then((value) {
-      //print(value.body);
+  getTrendingWallpapers() async{
+    var response = await http.get(Uri.parse("https://api.pexels.com/v1/curated?per_page=15&page=1"), 
+    headers: {"Authorization": apiKey});
 
-      Map<String, dynamic> jsonData = jsonDecode(value.body);
-      jsonData["photos"].forEach((element) {
-        //print(element);
-        PhotosModel photosModel = new PhotosModel();
-        photosModel = PhotosModel.fromMap(element);
-        photos.add(photosModel);
-        //print(photosModel.toString()+ "  "+ photosModel.src.portrait);
-      });
+    // print(response.body.toString());
 
-      setState(() {});
+    Map<String,dynamic> jsonData = jsonDecode(response.body);
+    jsonData["photos"].forEach((element){
+      // print(element);
+      WallpaperModel wallpaperModel = new WallpaperModel();
+      wallpaperModel = WallpaperModel.fromMap(element);
+      wallpapers.add(wallpaperModel);
+    });
+
+    setState(() {
+      
     });
   }
 
   @override
   void initState() {
+    getTrendingWallpapers();
     categories = getCategories();
     super.initState();
   }
-
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
         title: brandName(),
         elevation: 0.0,
       ),
-      backgroundColor: Colors.white,
       body: SingleChildScrollView(
         child: Container(
-          decoration: BoxDecoration(
-            color: Color(0xfff5f8fd),
-            borderRadius: BorderRadius.circular(30),
-          ),
-          margin: EdgeInsets.symmetric(horizontal: 24),
-          padding: EdgeInsets.symmetric(horizontal: 24),
-          child: Row(
-            children: <Widget>[
-              Expanded(
-                  child: TextField(
-                controller: searchController,
-                decoration: InputDecoration(
-                    hintText: "search wallpapers", border: InputBorder.none),
-              )),
-              InkWell(
-                  onTap: () {
-                    if (searchController.text != "") {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => SearchView(
-                                    search: searchController.text,
-                                  )));
-                    }
-                  },
-                  child: Container(child: Icon(Icons.search))),
-              SizedBox(
-                height: 8,
+          child: Column(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: Color(0xfff5f8fd),
+                  borderRadius: BorderRadius.circular(30)
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 24.0),
+                margin: EdgeInsets.symmetric(horizontal: 24.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: searchController,
+                        decoration: InputDecoration(
+                          hintText: "Search Wallpaper",  
+                          border: InputBorder.none                      
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: (){
+                      Navigator.push(context,MaterialPageRoute(
+                        builder: (context) => Search(searchQuery: searchController.text,
+                        ),
+                        ),
+                      );
+                      },
+                      child: Container(
+                        child: Icon(Icons.search)),
+                    )
+                  ],
+                ),
               ),
+              SizedBox(height: 16.0),
               Container(
                 height: 80,
                 child: ListView.builder(
-                    padding: EdgeInsets.symmetric(horizontal: 24),
-                    itemCount: categories.length,
-                    shrinkWrap: true,
-                    scrollDirection: Axis.horizontal,
-                    itemBuilder: (context, index) {
-                      /// Create List Item tile
-                      return CategoriesTile(
-                        imgUrls: categories[index].imgUrl,
-                        categorie: categories[index].categorieName,
-                      );
-                    }),
+                  padding: EdgeInsets.symmetric(horizontal: 24),
+                  itemCount: categories.length,
+                  shrinkWrap: true,
+                  scrollDirection: Axis.horizontal,
+                  itemBuilder: (context, index) {
+                    return CategoriesTile(
+                      title: categories[index].categorieName!,
+                      imgUrl: categories[index].imgUrl!,     
+                    );
+                  }),
               ),
+              SizedBox(height: 16.0),
+              WallpapersList(wallpapers: wallpapers, context: context),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class CategoriesTile extends StatelessWidget {
+  String imgUrl, title;
+
+  CategoriesTile({required this.imgUrl, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(
+          builder: (context) => Categorie(
+            categorieName: title.toLowerCase(),
+            ),
+          ),
+        );
+      },
+      child: Container(
+        margin: EdgeInsets.only(right: 4.0),
+        child: Stack(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(imgUrl, height: 50, width: 100, fit: BoxFit.cover),
+             ),
+            Container(
+              decoration: BoxDecoration( 
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.black26,
+              ),
+              height: 50, width: 100,
+              alignment: Alignment.center,
+              child: Text(title, 
+                style: TextStyle(
+                  color: Colors.white, 
+                  fontWeight: FontWeight.w500, 
+                  fontSize: 15),
+                  ),
+            )
+          ],
         ),
       ),
     );
